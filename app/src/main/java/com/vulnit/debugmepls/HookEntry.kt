@@ -79,7 +79,7 @@ class HookEntry : IXposedHookLoadPackage {
             ResolveInfo::class.java, Int::class.java, profilerInfoClass, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam?) {
                     val applicationInfo = (param?.args[1] as ResolveInfo).activityInfo.applicationInfo
-                    XposedBridge.log("[debugmepLS]Application Info: $applicationInfo")
+                    XposedBridge.log("[debugmepLS] Application Info: ${applicationInfo.packageName}")
                 }
 
             })
