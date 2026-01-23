@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.ResolveInfo
-import android.provider.Settings
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import de.robv.android.xposed.XC_MethodHook
@@ -21,50 +20,10 @@ class HookEntry : IXposedHookLoadPackage {
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam?) {
 
-        /*val settingsClass =
-            XposedHelpers.findClass(
-                "android.provider.Settings.Secure",
-                lpparam!!.classLoader
-            )
+        if (lpparam?.packageName != "android") {
+            return
+        }
 
-        XposedHelpers.findAndHookMethod(
-            settingsClass,
-            "getString",
-            ContentResolver::class.java,
-            String::class.java,
-            object : XC_MethodHook() {
-
-                override fun beforeHookedMethod(param: MethodHookParam?) {
-                    super.beforeHookedMethod(param)
-
-
-                    // param.args[0] -> ContentResolver
-                    // param.args[1] -> String key
-
-                    XposedBridge.log(
-                        "Before original method execution: ${param!!.args[0]} || ${param.args[1]}"
-                    )
-                }
-
-                override fun afterHookedMethod(param: MethodHookParam?) {
-                    super.afterHookedMethod(param)
-
-                    val key = param!!.args[1] as String
-
-                    // We only want to hook ANDROID_ID,
-                    // because getString() can be called for many keys
-                    if (key == Settings.Secure.ANDROID_ID) {
-
-                        XposedBridge.log("Original Android ID: ${param.result}")
-
-                        // 🔥 Spoof Android ID
-                        param.result = "1234567890abcdef"
-
-                        XposedBridge.log("Fake Android ID returned")
-                    }
-                }
-            }
-        )*/
         hookResolveActivity(lpparam)
         hookGetPackageInfo(lpparam)
         hookGetApplicationInfo(lpparam)
@@ -107,8 +66,8 @@ class HookEntry : IXposedHookLoadPackage {
             computerEngineClass,
             "getPackageInfo",
             String::class.java,
-            Long::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
+            Long::class.java,
+            Int::class.java,
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam?) {
                     val packageInfo = param?.result as? PackageInfo ?: return
@@ -131,8 +90,8 @@ class HookEntry : IXposedHookLoadPackage {
             computerEngineClass,
             "getApplicationInfo",
             String::class.java,
-            Long::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
+            Long::class.java,
+            Int::class.java,
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam?) {
                     val applicationInfo = param?.result as? ApplicationInfo ?: return
@@ -159,9 +118,10 @@ class HookEntry : IXposedHookLoadPackage {
         XposedHelpers.findAndHookMethod(
             computerEngineClass,
             "getInstalledApplications",
-            Long::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
+            Long::class.java,
+            Int::class.java,
+            Int::class.java,
+            Boolean::class.java,
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam?) {
                     val result = param?.result ?: return
@@ -184,34 +144,28 @@ class HookEntry : IXposedHookLoadPackage {
     }
 
     fun hookProcessStart() {
-        XposedHelpers.findAndHookMethod(
-            "android.os.Process",
-            null,
-            "start",
-            String::class.java,
-            String::class.java,
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
-            IntArray::class.java,
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!,
-            String::class.java,
-            String::class.java,
-            String::class.java,
-            String::class.java,
-            String::class.java,
-            Array<String>::class.java,
-            Array<String>::class.java,
-            object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam?) {
-                    val runtimeFlagsIndex = 5
-                    val currentFlags = param?.args?.get(runtimeFlagsIndex) as? Int ?: return
-                    val newFlags = currentFlags or DEBUG_ENABLE_JDWP
-                    param.args[runtimeFlagsIndex] = newFlags
-                    XposedBridge.log("[debugmepLS] Process.start runtimeFlags updated: $currentFlags -> $newFlags")
+        try {
+            val processClass = Class.forName("android.os.Process", false, null)
+            val startMethod = processClass.declaredMethods.firstOrNull { it.name == "start" }
+                ?: run {
+                    XposedBridge.log("[debugmepLS] Process.start not found")
+                    return
                 }
-            }
-        )
+
+            XposedBridge.hookMethod(
+                startMethod,
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam?) {
+                        val runtimeFlagsIndex = 5
+                        val currentFlags = param?.args?.get(runtimeFlagsIndex) as? Int ?: return
+                        val newFlags = currentFlags or DEBUG_ENABLE_JDWP
+                        param.args[runtimeFlagsIndex] = newFlags
+                        XposedBridge.log("[debugmepLS] Process.start runtimeFlags updated: $currentFlags -> $newFlags")
+                    }
+                }
+            )
+        } catch (t: Throwable) {
+            XposedBridge.log("[debugmepLS] Failed to hook Process.start: ${t.message}")
+        }
     }
 }
