@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import com.vulnit.debugmepls.DebugConfig
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
@@ -20,7 +23,8 @@ import kotlinx.coroutines.withContext
 data class AppDisplay(
     val name: String,
     val packageName: String,
-    val isSelected: Boolean
+    val isSelected: Boolean,
+    val icon: ImageBitmap?
 )
 
 data class AppListUiState(
@@ -37,6 +41,7 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
     private var remotePrefs: SharedPreferences? = null
     private var searchJob: Job? = null
     private var allApps: List<AppDisplay> = emptyList()
+    private val iconSizePx = (40 * application.resources.displayMetrics.density).toInt()
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == DebugConfig.KEY_ENABLED_PACKAGES) {
@@ -129,10 +134,15 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
                 .sortedBy { packageManager.getApplicationLabel(it).toString().lowercase() }
                 .map { appInfo ->
                     val label = packageManager.getApplicationLabel(appInfo).toString()
+                    val iconBitmap = runCatching {
+                        val drawable = packageManager.getApplicationIcon(appInfo)
+                        drawable.toBitmap(iconSizePx, iconSizePx).asImageBitmap()
+                    }.getOrNull()
                     AppDisplay(
                         name = label,
                         packageName = appInfo.packageName,
-                        isSelected = selectedPackages.contains(appInfo.packageName)
+                        isSelected = selectedPackages.contains(appInfo.packageName),
+                        icon = iconBitmap
                     )
                 }
         }
