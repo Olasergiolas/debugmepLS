@@ -178,12 +178,20 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
 
     private fun filterApps(apps: List<AppDisplay>, query: String): List<AppDisplay> {
         val normalizedQuery = query.trim().lowercase()
-        if (normalizedQuery.isEmpty()) {
-            return apps
+        val filtered = if (normalizedQuery.isEmpty()) {
+            apps
+        } else {
+            apps.filter {
+                it.name.lowercase().contains(normalizedQuery) ||
+                    it.packageName.lowercase().contains(normalizedQuery)
+            }
         }
-        return apps.filter {
-            it.name.lowercase().contains(normalizedQuery) ||
-                it.packageName.lowercase().contains(normalizedQuery)
+        return filtered.map { app ->
+            if (app.isSelected == selectedPackages.contains(app.packageName)) {
+                app
+            } else {
+                app.copy(isSelected = selectedPackages.contains(app.packageName))
+            }
         }
     }
 }

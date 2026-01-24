@@ -225,12 +225,14 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
     private val prefs by lazy { getRemotePreferences(DebugConfig.PREFS_NAME) }
 
     private fun isPackageEnabled(packageName: String): Boolean {
-        val enabled = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
-        return enabled.contains(packageName)
+        val enabledSet =
+            prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
+        return enabledSet.contains(packageName)
     }
 
     private fun isProcessSelected(args: Array<Any?>): Boolean {
-        val enabled = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
+        val enabled =
+            prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
         if (enabled.isEmpty()) {
             return false
         }
