@@ -3,8 +3,12 @@ package com.vulnit.debugmepls.ui
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.vulnit.debugmepls.DebugConfig
+import io.github.libxposed.service.XposedService
+import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,15 +31,35 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
 
     private val packageManager: PackageManager = application.packageManager
     private val selectedPackages = mutableSetOf<String>()
+    private var remotePrefs: SharedPreferences? = null
+
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == DebugConfig.KEY_ENABLED_PACKAGES) {
+            refreshApps()
+        }
+    }
 
     private val _uiState = MutableStateFlow(AppListUiState())
     val uiState: StateFlow<AppListUiState> = _uiState
 
     init {
+        bindXposedService()
         refreshApps()
     }
 
     fun onToggleApp(packageName: String, enable: Boolean) {
+        val prefs = remotePrefs
+        if (prefs != null) {
+            val updated = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet())
+                ?.toMutableSet() ?: mutableSetOf()
+            if (enable) {
+                updated.add(packageName)
+            } else {
+                updated.remove(packageName)
+            }
+            prefs.edit().putStringSet(DebugConfig.KEY_ENABLED_PACKAGES, updated).apply()
+        }
+
         if (enable) {
             selectedPackages.add(packageName)
         } else {
@@ -60,6 +84,7 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
     private fun refreshApps() {
         viewModelScope.launch {
             val showSystemApps = _uiState.value.showSystemApps
+            syncSelectionFromPrefs()
             val apps = loadInstalledApps(showSystemApps)
             _uiState.value = AppListUiState(
                 apps = apps,
@@ -67,6 +92,13 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
                 showSystemApps = showSystemApps
             )
         }
+    }
+
+    private fun syncSelectionFromPrefs() {
+        val prefs = remotePrefs ?: return
+        val enabled = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
+        selectedPackages.clear()
+        selectedPackages.addAll(enabled)
     }
 
     private suspend fun loadInstalledApps(showSystemApps: Boolean): List<AppDisplay> {
@@ -92,5 +124,21 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
         val isSystem = (flags and ApplicationInfo.FLAG_SYSTEM) != 0
         val isUpdatedSystem = (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
         return isSystem && !isUpdatedSystem
+    }
+
+    private fun bindXposedService() {
+        XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
+            override fun onServiceBind(service: XposedService) {
+                remotePrefs?.unregisterOnSharedPreferenceChangeListener(prefsListener)
+                remotePrefs = service.getRemotePreferences(DebugConfig.PREFS_NAME)
+                remotePrefs?.registerOnSharedPreferenceChangeListener(prefsListener)
+                refreshApps()
+            }
+
+            override fun onServiceDied(service: XposedService) {
+                remotePrefs?.unregisterOnSharedPreferenceChangeListener(prefsListener)
+                remotePrefs = null
+            }
+        })
     }
 }

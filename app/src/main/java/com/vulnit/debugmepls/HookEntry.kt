@@ -47,6 +47,9 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
             fun beforeInvocation(callback: BeforeHookCallback) {
                 val resolveInfo = callback.args.getOrNull(1) as? ResolveInfo ?: return
                 val applicationInfo = resolveInfo.activityInfo.applicationInfo
+                if (!module.isPackageEnabled(applicationInfo.packageName)) {
+                    return
+                }
                 applicationInfo.flags = applicationInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
                 module.log("[debugmepLS] Application Info: ${applicationInfo.packageName}")
             }
@@ -61,6 +64,9 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
             fun afterInvocation(callback: AfterHookCallback) {
                 val packageInfo = callback.result as? PackageInfo ?: return
                 val applicationInfo = packageInfo.applicationInfo ?: return
+                if (!module.isPackageEnabled(applicationInfo.packageName)) {
+                    return
+                }
                 applicationInfo.flags = applicationInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
                 module.log("[debugmepLS] Package debuggable enforced: ${packageInfo.packageName}")
             }
@@ -74,6 +80,9 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
             @AfterInvocation
             fun afterInvocation(callback: AfterHookCallback) {
                 val applicationInfo = callback.result as? ApplicationInfo ?: return
+                if (!module.isPackageEnabled(applicationInfo.packageName)) {
+                    return
+                }
                 applicationInfo.flags = applicationInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
                 module.log("[debugmepLS] Application debuggable enforced: ${applicationInfo.packageName}")
             }
@@ -99,6 +108,9 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
 
                 applications.forEach {
                     val appInfo = it as? ApplicationInfo ?: return@forEach
+                    if (!module.isPackageEnabled(appInfo.packageName)) {
+                        return@forEach
+                    }
                     appInfo.flags = appInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
                     module.log("[debugmepLS] Installed app debuggable enforced: ${appInfo.packageName}")
                 }
@@ -115,6 +127,9 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
                 val runtimeFlagsIndex = 5
                 val args = callback.args
                 if (args.size <= runtimeFlagsIndex) {
+                    return
+                }
+                if (!module.isProcessSelected(args)) {
                     return
                 }
                 val currentFlags = args[runtimeFlagsIndex] as? Int ?: return
@@ -205,6 +220,28 @@ class HookEntry(base: XposedInterface, param: ModuleLoadedParam) : XposedModule(
         } catch (t: Throwable) {
             log("[debugmepLS] Failed to hook Process.start: ${t.message}")
         }
+    }
+
+    private val prefs by lazy { getRemotePreferences(DebugConfig.PREFS_NAME) }
+
+    private fun isPackageEnabled(packageName: String): Boolean {
+        val enabled = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
+        return enabled.contains(packageName)
+    }
+
+    private fun isProcessSelected(args: Array<Any?>): Boolean {
+        val enabled = prefs.getStringSet(DebugConfig.KEY_ENABLED_PACKAGES, emptySet()) ?: emptySet()
+        if (enabled.isEmpty()) {
+            return false
+        }
+        for (arg in args) {
+            val raw = arg as? String ?: continue
+            val pkg = raw.substringBefore(':')
+            if (enabled.contains(pkg)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun findMethod(
