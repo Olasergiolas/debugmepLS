@@ -1,16 +1,14 @@
 package com.vulnit.debugmepls
 
-import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.ResolveInfo
 import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.callbacks.XC_LoadPackage
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
-import kotlin.jvm.java
+import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 class HookEntry : IXposedHookLoadPackage {
 
@@ -47,7 +45,7 @@ class HookEntry : IXposedHookLoadPackage {
         XposedHelpers.findAndHookMethod(activityTaskSupervisorClass, "resolveActivity", Intent::class.java,
             ResolveInfo::class.java, Int::class.java, profilerInfoClass, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam?) {
-                    val applicationInfo = (param?.args[1] as ResolveInfo).activityInfo.applicationInfo
+                    val applicationInfo = (param?.args?.get(1) as ResolveInfo).activityInfo.applicationInfo
                     applicationInfo.flags = applicationInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
                     XposedBridge.log("[debugmepLS] Application Info: ${applicationInfo.packageName}")
                 }
@@ -167,5 +165,9 @@ class HookEntry : IXposedHookLoadPackage {
         } catch (t: Throwable) {
             XposedBridge.log("[debugmepLS] Failed to hook Process.start: ${t.message}")
         }
+    }
+
+    private fun Array<Any?>.getOrNull(index: Int): Any? {
+        return if (index in indices) this[index] else null
     }
 }
