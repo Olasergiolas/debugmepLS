@@ -9,9 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.vulnit.debugmepls.DebugConfig
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -24,7 +26,8 @@ data class AppDisplay(
 data class AppListUiState(
     val apps: List<AppDisplay> = emptyList(),
     val isLoading: Boolean = true,
-    val showSystemApps: Boolean = false
+    val showSystemApps: Boolean = false,
+    val query: String = ""
 )
 
 class AppSelectionViewModel(application: Application) : AndroidViewModel(application) {
@@ -32,6 +35,8 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
     private val packageManager: PackageManager = application.packageManager
     private val selectedPackages = mutableSetOf<String>()
     private var remotePrefs: SharedPreferences? = null
+    private var searchJob: Job? = null
+    private var allApps: List<AppDisplay> = emptyList()
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == DebugConfig.KEY_ENABLED_PACKAGES) {
@@ -81,15 +86,28 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
         refreshApps()
     }
 
+    fun onQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(query = query)
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300)
+            applyFilter()
+        }
+    }
+
     private fun refreshApps() {
         viewModelScope.launch {
             val showSystemApps = _uiState.value.showSystemApps
             syncSelectionFromPrefs()
+            val query = _uiState.value.query
             val apps = loadInstalledApps(showSystemApps)
+            allApps = apps
+            val filtered = filterApps(apps, query)
             _uiState.value = AppListUiState(
-                apps = apps,
+                apps = filtered,
                 isLoading = false,
-                showSystemApps = showSystemApps
+                showSystemApps = showSystemApps,
+                query = query
             )
         }
     }
@@ -140,5 +158,22 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
                 remotePrefs = null
             }
         })
+    }
+
+    private fun applyFilter() {
+        val query = _uiState.value.query
+        val filtered = filterApps(allApps, query)
+        _uiState.value = _uiState.value.copy(apps = filtered)
+    }
+
+    private fun filterApps(apps: List<AppDisplay>, query: String): List<AppDisplay> {
+        val normalizedQuery = query.trim().lowercase()
+        if (normalizedQuery.isEmpty()) {
+            return apps
+        }
+        return apps.filter {
+            it.name.lowercase().contains(normalizedQuery) ||
+                it.packageName.lowercase().contains(normalizedQuery)
+        }
     }
 }

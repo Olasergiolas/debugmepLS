@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -64,7 +65,8 @@ fun AppSelectionRoute(viewModel: AppSelectionViewModel = viewModel()) {
     AppSelectionScreen(
         uiState = uiState,
         onToggleApp = viewModel::onToggleApp,
-        onToggleShowSystemApps = viewModel::onToggleShowSystemApps
+        onToggleShowSystemApps = viewModel::onToggleShowSystemApps,
+        onQueryChange = viewModel::onQueryChange
     )
 }
 
@@ -74,6 +76,7 @@ fun AppSelectionScreen(
     uiState: AppListUiState,
     onToggleApp: (String, Boolean) -> Unit,
     onToggleShowSystemApps: (Boolean) -> Unit,
+    onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -138,20 +141,33 @@ fun AppSelectionScreen(
                 }
             }
             else -> {
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                        .padding(innerPadding)
                 ) {
-                    items(
-                        items = uiState.apps,
-                        key = { it.packageName }
-                    ) { app ->
-                        AppRow(
-                            app = app,
-                            onToggle = { checked -> onToggleApp(app.packageName, checked) }
-                        )
+                    TextField(
+                        value = uiState.query,
+                        onValueChange = onQueryChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        placeholder = { Text(text = "Search apps") },
+                        singleLine = true
+                    )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 12.dp)
+                    ) {
+                        items(
+                            items = uiState.apps,
+                            key = { it.packageName }
+                        ) { app ->
+                            AppRow(
+                                app = app,
+                                onToggle = { checked -> onToggleApp(app.packageName, checked) }
+                            )
+                        }
                     }
                 }
             }
