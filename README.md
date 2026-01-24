@@ -28,7 +28,7 @@ You can also download the latest build from the project Releases page.
 Hooks in system_server modify `ApplicationInfo` (and process start flags) to enable debugging for selected packages.
 
 ## Troubleshooting
-- If the status shows **Not connected to LSPossed service**, ensure the module is enabled and LSPosed is running.
+- If the status shows **Not connected to LSPosed service**, ensure the module is enabled and LSPosed is running.
 - Changes apply when the target process is (re)started.
 
 ## Project Structure

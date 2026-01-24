@@ -184,6 +184,7 @@ fun AppSelectionScreen(
                     CircularProgressIndicator()
                 }
             }
+
             else -> {
                 Column(
                     modifier = Modifier
@@ -238,7 +239,7 @@ fun StatusCard(
         else MaterialTheme.colorScheme.tertiaryContainer
     val borderColor =
         if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-    val text = if (isConnected) "LSPosed connected" else "Not connected to LSPossed service"
+    val text = if (isConnected) "LSPosed connected" else "Not connected to LSPosed service"
 
     Card(
         modifier = modifier,
