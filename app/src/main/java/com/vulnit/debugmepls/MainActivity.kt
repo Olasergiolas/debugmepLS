@@ -206,7 +206,7 @@ fun AppSelectionScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(top = 0.dp, bottom = 8.dp)
+                            contentPadding = PaddingValues(top = 4.dp, bottom = 8.dp)
                         ) {
                             items(
                                 items = uiState.apps,
@@ -378,7 +378,7 @@ fun AppRow(
             trailingContent = {
                 val switchColors = if (app.isSelected) {
                     SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary,
                         uncheckedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         uncheckedTrackColor = MaterialTheme.colorScheme.primaryContainer,
