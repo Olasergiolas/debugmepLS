@@ -14,3 +14,6 @@ val DarkPurpleBackground = Color(0xFF12091F)
 val DarkPurpleSurface = Color(0xFF1A0F2B)
 val DarkPurpleSurfaceVariant = Color(0xFF2A1743)
 val DarkPurpleOnSurface = Color(0xFFEADFFF)
+
+val StatusGreen = Color(0xFF2ECC71)
+val StatusYellow = Color(0xFFF1C40F)

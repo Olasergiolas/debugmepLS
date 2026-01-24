@@ -31,7 +31,8 @@ data class AppListUiState(
     val apps: List<AppDisplay> = emptyList(),
     val isLoading: Boolean = true,
     val showSystemApps: Boolean = false,
-    val query: String = ""
+    val query: String = "",
+    val isServiceConnected: Boolean = false
 )
 
 class AppSelectionViewModel(application: Application) : AndroidViewModel(application) {
@@ -112,7 +113,8 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
                 apps = filtered,
                 isLoading = false,
                 showSystemApps = showSystemApps,
-                query = query
+                query = query,
+                isServiceConnected = _uiState.value.isServiceConnected
             )
         }
     }
@@ -160,12 +162,14 @@ class AppSelectionViewModel(application: Application) : AndroidViewModel(applica
                 remotePrefs?.unregisterOnSharedPreferenceChangeListener(prefsListener)
                 remotePrefs = service.getRemotePreferences(DebugConfig.PREFS_NAME)
                 remotePrefs?.registerOnSharedPreferenceChangeListener(prefsListener)
+                _uiState.value = _uiState.value.copy(isServiceConnected = true)
                 refreshApps()
             }
 
             override fun onServiceDied(service: XposedService) {
                 remotePrefs?.unregisterOnSharedPreferenceChangeListener(prefsListener)
                 remotePrefs = null
+                _uiState.value = _uiState.value.copy(isServiceConnected = false)
             }
         })
     }

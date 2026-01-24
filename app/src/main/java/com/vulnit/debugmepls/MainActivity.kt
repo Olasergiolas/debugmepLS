@@ -35,6 +35,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.font.FontWeight
+import com.vulnit.debugmepls.ui.theme.StatusGreen
+import com.vulnit.debugmepls.ui.theme.StatusYellow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -149,6 +152,12 @@ fun AppSelectionScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
+                    StatusPill(
+                        isConnected = uiState.isServiceConnected,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                     SearchBar(
                         query = uiState.query,
                         onQueryChange = onQueryChange,
@@ -181,6 +190,41 @@ fun AppSelectionScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun StatusPill(
+    isConnected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val background = MaterialTheme.colorScheme.surfaceVariant
+    val foreground = MaterialTheme.colorScheme.onSurfaceVariant
+    val statusColor = if (isConnected) StatusGreen else StatusYellow
+    val text = if (isConnected) "LSPosed connected" else "Not connected to LSPossed service"
+
+    Box(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.large)
+            .background(background)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Status:",
+                color = foreground,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = text,
+                color = statusColor,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+            )
         }
     }
 }
