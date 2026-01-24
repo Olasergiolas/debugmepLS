@@ -2,6 +2,11 @@
 
 LSPosed module + companion app that forces selected apps to be debuggable on Android by hooking framework services. The app provides a scrollable list of installed apps so you can enable/disable which packages get `FLAG_DEBUGGABLE`.
 
+<p float="left">
+    <img src="resources/scr1.png" alt="scr1" width="250"/>
+    <img src="resources/scr2.png" alt="scr2" width="250"/>
+</p>
+
 ## Features
 - Per‑app enable/disable list with search and system‑app toggle
 - Status header showing LSPosed service connection state
