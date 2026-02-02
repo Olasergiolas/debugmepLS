@@ -7,6 +7,12 @@ LSPosed module + companion app that forces selected apps to be debuggable on And
     <img src="resources/scr2.png" alt="scr2" width="250"/>
 </p>
 
+## Demo
+
+<p>
+    <img src="resources/demo.gif" alt="demo" width="600"/>
+</p>
+
 ## Features
 - Per‑app enable/disable list with search and system‑app toggle
 - Status header showing LSPosed service connection state
