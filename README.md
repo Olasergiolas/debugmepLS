@@ -25,9 +25,11 @@ You can also download the latest build from the project Releases page.
 
 ## Usage
 1. Install the app and enable it as an LSPosed module.
-2. Open the app and wait for the status to show **LSPosed connected**.
-3. Toggle the apps you want to be debuggable.
-4. Relaunch the target app/process to apply changes.
+2. Ensure that you select "System Framework" for the module's scope.
+3. Reboot the device.
+4. Open the app and wait for the status to show **LSPosed connected**.
+5. Toggle the packages you want to be debuggable.
+6. Relaunch the target app or process.
 
 ## How it works
 Hooks in system_server modify `ApplicationInfo` (and process start flags) to enable debugging for selected packages.
