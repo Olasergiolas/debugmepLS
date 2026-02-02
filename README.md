@@ -44,4 +44,4 @@ Hooks in system_server modify `ApplicationInfo` (and process start flags) to ena
 ## Special Thanks
 - @Ismael034 for the hooking points in the Android Framework.
 - LSPosed team for the official libxposed example app and framework:
-`https://github.com/libxposed/example/tree/master`.∫
+`https://github.com/libxposed/example/tree/master`.
